@@ -1,9 +1,9 @@
 import SwiftUI
 
 enum TipKind: String, Identifiable {
-    case activation = "生效说明"
-    case deactivation = "失效说明"
-    case removeProxy = "关闭 WiFi 代理"
+    case activation = "إرشادات التفعيل"
+    case deactivation = "إرشادات الإلغاء"
+    case removeProxy = "إيقاف بروكسي Wi‑Fi"
     var id: String { rawValue }
 }
 
@@ -26,7 +26,7 @@ struct TipSheetView: View {
             .navigationTitle(kind.rawValue).navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 Button { dismiss() } label: {
-                    Text("知道了").font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    Text("حسنًا").font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 12)
                 }.buttonStyle(.borderedProminent).tint(.blue).padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
@@ -48,29 +48,29 @@ private func openSettings(_ destination: SystemSettingsDestination) {
     }
 }
 
-// MARK: - 生效说明
+// MARK: - Activation guide
 
 struct ActivationTipContent: View {
     var runtimeMode: ProxyRuntimeMode = .localWiFi
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("让虚拟定位生效", systemImage: "checklist")) {
+        GroupBox(label: Label("تفعيل الموقع الافتراضي", systemImage: "checklist")) {
             VStack(alignment: .leading, spacing: 10) {
                 if runtimeMode == .thirdParty {
-                    step(0, "确认第三方代理已开启", "保持已导入的 WLOC 模块、HTTPS 解密和第三方代理/VPN 连接开启。")
+                    step(0, "تأكد من تشغيل البروكسي الخارجي", "أبقِ وحدة WLOC وفك تشفير HTTPS واتصال البروكسي أو VPN في التطبيق الخارجي قيد التشغيل.")
                 }
-                step(1, "开启飞行模式", "从控制中心打开飞行模式（点飞机图标），Wi‑Fi 会自动断开。这是为了清除 iOS 的定位缓存。等待 2 秒。")
-                step(2, "关闭 Wi‑Fi", "从控制中心再点一下 Wi‑Fi 图标，确认 Wi‑Fi 已关闭。等待 2 秒。")
-                systemStep(3, "关闭系统定位服务", "打开系统「设置 → 隐私与安全性 → 定位服务」，关闭顶部的总开关。等待 2 秒。")
-                step(4, "打开 Wi‑Fi，启动虚拟定位", runtimeMode == .thirdParty ? "从控制中心打开 Wi‑Fi（飞行模式保持开启），确认第三方代理已连接。坐标已经同步到第三方代理。等待 2 秒。" : "从控制中心打开 Wi‑Fi（飞行模式保持开启），进入 App 点底部「开始虚拟定位」。等待 2 秒。")
-                step(5, "关闭飞行模式", "从控制中心关闭飞行模式。等待 2 秒。")
-                systemStep(6, "重新开启定位服务", "再次进入「设置 → 隐私与安全性 → 定位服务」，打开总开关。完成后打开地图验证定位是否已变化。")
+                step(1, "تشغيل نمط الطيران", "افتح مركز التحكم وشغّل نمط الطيران بالضغط على رمز الطائرة. قد ينقطع Wi‑Fi تلقائيًا. انتظر ثانيتين.")
+                step(2, "إيقاف Wi‑Fi", "من مركز التحكم تأكد أن Wi‑Fi متوقف، ثم انتظر ثانيتين.")
+                systemStep(3, "إيقاف خدمات الموقع", "افتح «الإعدادات ← الخصوصية والأمان ← خدمات الموقع»، ثم أوقف المفتاح الرئيسي لخدمات الموقع. انتظر ثانيتين.")
+                step(4, "تشغيل Wi‑Fi وبدء الموقع الافتراضي", runtimeMode == .thirdParty ? "شغّل Wi‑Fi من مركز التحكم مع إبقاء نمط الطيران مفعّلًا، وتأكد من اتصال البروكسي الخارجي. الإحداثيات تكون قد تزامنت معه. انتظر ثانيتين." : "شغّل Wi‑Fi من مركز التحكم مع إبقاء نمط الطيران مفعّلًا، ثم ارجع للتطبيق واضغط «بدء الموقع الافتراضي». انتظر ثانيتين.")
+                step(5, "إيقاف نمط الطيران", "أوقف نمط الطيران من مركز التحكم، ثم انتظر ثانيتين.")
+                systemStep(6, "إعادة تشغيل خدمات الموقع", "ارجع إلى «الإعدادات ← الخصوصية والأمان ← خدمات الموقع» وشغّل المفتاح الرئيسي. بعدها افتح خرائط Apple للتحقق من الموقع.")
             }.padding(.vertical, 4)
         }
 
-        GroupBox(label: Label("还是无法生效？", systemImage: "exclamationmark.triangle")) {
-            Text("操作到第 3 步时关机重启，开机后从第 4 步继续。这样能彻底清除系统缓存的定位数据。")
+        GroupBox(label: Label("ما زال الموقع لا يتغير؟", systemImage: "exclamationmark.triangle")) {
+            Text("إذا لم يتغير الموقع، أعد تشغيل الآيفون بعد إتمام الخطوة 3، ثم أكمل من الخطوة 4. يساعد ذلك على مسح بيانات الموقع المخزنة مؤقتًا في النظام.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -101,37 +101,37 @@ struct ActivationTipContent: View {
                 Text(title).font(.caption.weight(.semibold))
                 Text(detail).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button { openSettings(.locationServices) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("فتح الإعدادات", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }
         }
     }
 }
 
-// MARK: - 失效说明
+// MARK: - Deactivation guide
 
 struct DeactivationTipContent: View {
     var runtimeMode: ProxyRuntimeMode = .localWiFi
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("取消虚拟定位", systemImage: "arrow.uturn.backward.circle")) {
+        GroupBox(label: Label("إلغاء الموقع الافتراضي", systemImage: "arrow.uturn.backward.circle")) {
             VStack(alignment: .leading, spacing: 10) {
-                step(1, "开启飞行模式", "从控制中心打开飞行模式，Wi‑Fi 会自动断开。等待 2 秒。")
-                step(2, "关闭 Wi‑Fi", "从控制中心确认 Wi‑Fi 已关闭。等待 2 秒。")
-                systemStep(3, "关闭系统定位服务", "打开「设置 → 隐私与安全性 → 定位服务」，关闭总开关。等待 2 秒。")
+                step(1, "تشغيل نمط الطيران", "شغّل نمط الطيران من مركز التحكم، ثم انتظر ثانيتين.")
+                step(2, "إيقاف Wi‑Fi", "من مركز التحكم تأكد أن Wi‑Fi متوقف، ثم انتظر ثانيتين.")
+                systemStep(3, "إيقاف خدمات الموقع", "افتح «الإعدادات ← الخصوصية والأمان ← خدمات الموقع» وأوقف المفتاح الرئيسي، ثم انتظر ثانيتين.")
                 if runtimeMode == .thirdParty {
-                    step(4, "确认坐标已清除", "App 已通知第三方代理清除虚拟坐标。保持网络可用并等待 2 秒，让系统重新获取真实定位。")
+                    step(4, "التأكد من مسح الإحداثيات", "أرسل التطبيق أمر مسح الموقع الافتراضي إلى البروكسي الخارجي. أبقِ الشبكة متاحة وانتظر ثانيتين حتى يعيد النظام جلب موقعك الحقيقي.")
                 } else {
-                    systemStep(4, "打开 Wi‑Fi，移除代理", "从控制中心打开 Wi‑Fi。然后进入「设置 → 无线局域网 → 点 WiFi 右侧 (i) → HTTP 代理」，选择「关闭」后存储。等待 2 秒。")
+                    systemStep(4, "تشغيل Wi‑Fi وإيقاف البروكسي", "شغّل Wi‑Fi، ثم افتح تفاصيل الشبكة الحالية واضبط «بروكسي HTTP» على «إيقاف». انتظر ثانيتين.")
                 }
-                step(5, "关闭飞行模式", "从控制中心关闭飞行模式。等待 2 秒。")
-                systemStep(6, "重新开启定位服务", "再次进入「设置 → 隐私与安全性 → 定位服务」打开总开关。打开地图验证定位是否恢复。")
+                step(5, "إيقاف نمط الطيران", "أوقف نمط الطيران من مركز التحكم، ثم انتظر ثانيتين.")
+                systemStep(6, "إعادة تشغيل خدمات الموقع", "ارجع إلى «الإعدادات ← الخصوصية والأمان ← خدمات الموقع» وشغّل المفتاح الرئيسي، ثم افتح خرائط Apple للتأكد من عودة موقعك الحقيقي.")
             }.padding(.vertical, 4)
         }
 
-        GroupBox(label: Label("还是无法取消？", systemImage: "exclamationmark.triangle")) {
-            Text("操作到第 3 步时关机重启，开机后从第 4 步继续。")
+        GroupBox(label: Label("ما زال الموقع الافتراضي ظاهرًا؟", systemImage: "exclamationmark.triangle")) {
+            Text("أعد تشغيل الآيفون بعد إتمام الخطوة 3، ثم أكمل من الخطوة 4.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -162,25 +162,25 @@ struct DeactivationTipContent: View {
                 Text(title).font(.caption.weight(.semibold))
                 Text(detail).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button { openSettings(.locationServices) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("فتح الإعدادات", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }
         }
     }
 }
 
-// MARK: - 移除 WiFi 代理
+// MARK: - Remove Wi-Fi proxy
 
 struct RemoveProxyTipContent: View {
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("移除代理配置", systemImage: "wifi.slash")) {
+        GroupBox(label: Label("إيقاف بروكسي Wi‑Fi", systemImage: "wifi.slash")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("停止虚拟定位后，需要手动移除 WiFi 代理配置，否则可能无法上网。\n\n1. 打开「设置 → 无线局域网」\n2. 点击当前 WiFi 右侧 (i) 图标\n3. 找到「HTTP 代理」\n4. 选择「关闭」\n5. 点右上角「存储」")
+                Text("بعد إيقاف الموقع الافتراضي، أوقف إعداد بروكسي Wi‑Fi يدويًا حتى لا يتأثر اتصال الإنترنت.\n\n1. افتح «الإعدادات ← Wi‑Fi»\n2. اضغط زر (i) بجانب الشبكة الحالية\n3. افتح «تكوين البروكسي» أو «بروكسي HTTP»\n4. اختر «إيقاف»\n5. اضغط «حفظ»")
                     .font(.caption).foregroundStyle(.primary)
                 Button { openSettings(.wifi) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("فتح إعدادات Wi‑Fi", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }.padding(.vertical, 4)
         }
