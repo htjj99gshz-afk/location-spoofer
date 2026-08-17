@@ -3,7 +3,10 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
+CJK = re.compile(r'[\u3400-\u9fff]')
 
+# Final cleanup for strings that combine interpolation or were only partially
+# translated by the broad presentation-layer pass.
 REPLACEMENTS = {
     '第 1 步：导入 \\(client.name) 模块': 'الخطوة 1: استيراد وحدة \\(client.name)',
     '打开 \\(client.name)': 'فتح \\(client.name)',
@@ -19,9 +22,6 @@ REPLACEMENTS = {
     'Egern 直接使用 Surge 的 .sgmodule 模块。': 'يستخدم Egern وحدة Surge بصيغة .sgmodule مباشرة.',
     'Stash 直接订阅 .stoverride，不要通过 Script Hub 转换。': 'في Stash اشترك بملف .stoverride مباشرة ولا تحوّله عبر Script Hub.',
     'نسخ رابط اشتراك الوحدة后，在对应代理العميل中添加模块/重写订阅，并为 gs-loc.apple.com 和 gs-loc-cn.apple.com 启用 MITM。第三方العميلحفظ坐标后，即使إغلاق本 App，坐标仍由代理العميل持久化并继续生效。': 'بعد نسخ رابط اشتراك الوحدة، أضفه في عميل البروكسي المناسب كوحدة أو اشتراك إعادة كتابة، وفعّل MITM للنطاقين gs-loc.apple.com و gs-loc-cn.apple.com. بعد حفظ الإحداثيات في العميل الخارجي ستبقى محفوظة وفعالة حتى عند إغلاق هذا التطبيق.',
-    '操作到第 3 步时关机重启，开机后从第 4 步继续。这样能彻底清除系统缓存的定位数据。': 'إذا لم يعمل التغيير، أعد تشغيل الآيفون بعد الخطوة 3 ثم أكمل من الخطوة 4. يساعد ذلك على مسح بيانات الموقع المخزنة مؤقتًا في النظام.',
-    '操作到第 3 步时关机重启，开机后从第 4 步继续。': 'إذا لم يتم الإلغاء، أعد تشغيل الآيفون بعد الخطوة 3 ثم أكمل من الخطوة 4.',
-    'إيقاف الموقع الافتراضي后，需要手动移除 WiFi 代理配置，否则可能无法上网。\\n\\n1. 打开「الإعدادات → 无线局域网」\\n2. 点击当前 WiFi 右侧 (i) 图标\\n3. 找到「HTTP 代理」\\n4. 选择「إغلاق」\\n5. 点右上角「存储」': 'بعد إيقاف الموقع الافتراضي، أزل إعداد بروكسي Wi‑Fi يدويًا حتى لا يتأثر الاتصال بالإنترنت.\\n\\n1. افتح «الإعدادات ← Wi‑Fi»\\n2. اضغط زر (i) بجانب الشبكة الحالية\\n3. افتح «بروكسي HTTP»\\n4. اختر «إيقاف»\\n5. احفظ التغيير',
 }
 
 
@@ -35,29 +35,56 @@ def apply(path: Path) -> None:
         print(f'Arabic final: updated {path.relative_to(ROOT)}')
 
 
+def swift_string_literals(text: str):
+    # Covers ordinary and multiline Swift string literals well enough for UI
+    # validation. The goal is to catch any remaining Chinese copy regardless of
+    # whether it is passed directly to Text/Label or through helper functions.
+    pattern = re.compile(r'"""[\s\S]*?"""|"(?:\\.|[^"\\])*"')
+    yield from pattern.finditer(text)
+
+
+def validate_swift_file(path: Path, offenders: list[str]) -> None:
+    text = path.read_text(encoding='utf-8')
+    for match in swift_string_literals(text):
+        literal = match.group(0)
+        if CJK.search(literal):
+            line = text.count('\n', 0, match.start()) + 1
+            compact = ' '.join(literal.split())
+            offenders.append(f'{path.relative_to(ROOT)}:{line}: {compact[:220]}')
+
+
+def validate_plist(offenders: list[str]) -> None:
+    path = ROOT / 'Resources' / 'Info.plist'
+    if not path.exists():
+        return
+    text = path.read_text(encoding='utf-8')
+    for match in re.finditer(r'<string>([\s\S]*?)</string>', text):
+        value = match.group(1)
+        if CJK.search(value):
+            line = text.count('\n', 0, match.start()) + 1
+            offenders.append(f'{path.relative_to(ROOT)}:{line}: {value.strip()}')
+
+
 def validate() -> None:
-    patterns = [
-        re.compile(r'(?:Text|Label|Button|Section|GroupBox|TextField)\(\s*"[^"\n]*[\u3400-\u9fff]'),
-        re.compile(r'\.navigationTitle\(\s*"[^"\n]*[\u3400-\u9fff]'),
-        re.compile(r'\.alert\(\s*"[^"\n]*[\u3400-\u9fff]'),
-        re.compile(r'message:\s*Text\(\s*"[^"\n]*[\u3400-\u9fff]'),
-    ]
-    offenders = []
-    for path in sorted((ROOT / 'App').glob('*.swift')):
-        for lineno, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
-            if any(p.search(line) for p in patterns):
-                offenders.append(f'{path.relative_to(ROOT)}:{lineno}: {line.strip()}')
+    offenders: list[str] = []
+    for directory in ['App', 'Shared']:
+        for path in sorted((ROOT / directory).glob('*.swift')):
+            validate_swift_file(path, offenders)
+    validate_plist(offenders)
+
     if offenders:
-        print('Arabic final: visible Chinese literals still remain:')
-        for item in offenders[:100]:
+        print('Arabic UI validation failed. Chinese text remains in string literals:')
+        for item in offenders[:200]:
             print('  ' + item)
-        raise SystemExit(f'Arabic UI validation failed: {len(offenders)} visible Chinese literals remain')
-    print('Arabic final: zero obvious Chinese literals in common SwiftUI controls')
+        raise SystemExit(f'Arabic UI validation failed: {len(offenders)} untranslated string literals remain')
+
+    print('Arabic UI validation: zero Chinese string literals in App/, Shared/, and Info.plist')
 
 
 def main() -> None:
-    for path in sorted((ROOT / 'App').glob('*.swift')):
-        apply(path)
+    for directory in ['App', 'Shared']:
+        for path in sorted((ROOT / directory).glob('*.swift')):
+            apply(path)
     validate()
 
 
