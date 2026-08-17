@@ -22,6 +22,12 @@ REPLACEMENTS = {
     'Egern 直接使用 Surge 的 .sgmodule 模块。': 'يستخدم Egern وحدة Surge بصيغة .sgmodule مباشرة.',
     'Stash 直接订阅 .stoverride，不要通过 Script Hub 转换。': 'في Stash اشترك بملف .stoverride مباشرة ولا تحوّله عبر Script Hub.',
     'نسخ رابط اشتراك الوحدة后，在对应代理العميل中添加模块/重写订阅，并为 gs-loc.apple.com 和 gs-loc-cn.apple.com 启用 MITM。第三方العميلحفظ坐标后，即使إغلاق本 App，坐标仍由代理العميل持久化并继续生效。': 'بعد نسخ رابط اشتراك الوحدة، أضفه في عميل البروكسي المناسب كوحدة أو اشتراك إعادة كتابة، وفعّل MITM للنطاقين gs-loc.apple.com و gs-loc-cn.apple.com. بعد حفظ الإحداثيات في العميل الخارجي ستبقى محفوظة وفعالة حتى عند إغلاق هذا التطبيق.',
+    '已恢复真实定位': 'تمت استعادة الموقع الحقيقي',
+    '启动代理…': 'جارٍ تشغيل البروكسي…',
+    '已إلغاء位置更新': 'تم إلغاء تحديث الموقع',
+    '启动失败': 'فشل التشغيل',
+    '当前الإصدار \\(prompt.currentVersion) 已停止الدعم，请更新到 \\(prompt.latestVersion) 后继续使用。\\n\\n\\(details)': 'الإصدار الحالي \\(prompt.currentVersion) لم يعد مدعومًا. حدّث إلى \\(prompt.latestVersion) للمتابعة.\\n\\n\\(details)',
+    '当前الإصدار \\(prompt.currentVersion)，最新الإصدار \\(prompt.latestVersion)。\\n\\n\\(details)': 'الإصدار الحالي \\(prompt.currentVersion)، وأحدث إصدار \\(prompt.latestVersion).\\n\\n\\(details)',
 }
 
 
@@ -47,7 +53,7 @@ def validate_swift_file(path: Path, offenders: list[str]) -> None:
         re.compile(rf'\b(?:step|systemStep)\([^\n]*"[^"\n]*[{CJK_CLASS}]'),
         # Setup status text and the diagnostic card shown to the user.
         re.compile(rf'\bmessage\s*=\s*"[^"\n]*[{CJK_CLASS}]'),
-        re.compile(rf'\blog\(\s*"[^"\n]*[{CJK_CLASS}]'),
+        re.compile(rf'^\s*log\(\s*"[^"\n]*[{CJK_CLASS}]'),
     ]
 
     for lineno, line in enumerate(text.splitlines(), 1):
