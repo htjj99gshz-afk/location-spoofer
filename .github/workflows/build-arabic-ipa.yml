@@ -1,6 +1,6 @@
 name: Build Arabic IPA
 
-# Arabic UI fork build. A push touching this workflow or the translation script
+# Arabic UI fork build. A push touching this workflow or the translation scripts
 # also triggers a fresh unsigned IPA build.
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - 'Scripts/apply-arabic-ui.py'
+      - 'Scripts/arabic-ui-polish.py'
       - '.github/workflows/build-arabic-ipa.yml'
 
 jobs:
@@ -23,6 +24,9 @@ jobs:
 
       - name: Apply Arabic UI and RTL
         run: python3 Scripts/apply-arabic-ui.py
+
+      - name: Polish Arabic UI guides
+        run: python3 Scripts/arabic-ui-polish.py
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
