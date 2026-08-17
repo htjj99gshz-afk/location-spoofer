@@ -10,6 +10,7 @@ on:
     paths:
       - 'Scripts/apply-arabic-ui.py'
       - 'Scripts/arabic-ui-polish.py'
+      - 'Scripts/arabic-ui-final.py'
       - '.github/workflows/build-arabic-ipa.yml'
 
 jobs:
@@ -27,6 +28,9 @@ jobs:
 
       - name: Polish Arabic UI guides
         run: python3 Scripts/arabic-ui-polish.py
+
+      - name: Final Arabic UI validation
+        run: python3 Scripts/arabic-ui-final.py
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
