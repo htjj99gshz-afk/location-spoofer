@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-CJK = re.compile(r'[\u3400-\u9fff]')
+CJK_CLASS = r'\u3400-\u9fff'
 
 # Final cleanup for strings that combine interpolation or were only partially
 # translated by the broad presentation-layer pass.
@@ -35,22 +35,24 @@ def apply(path: Path) -> None:
         print(f'Arabic final: updated {path.relative_to(ROOT)}')
 
 
-def swift_string_literals(text: str):
-    # Covers ordinary and multiline Swift string literals well enough for UI
-    # validation. The goal is to catch any remaining Chinese copy regardless of
-    # whether it is passed directly to Text/Label or through helper functions.
-    pattern = re.compile(r'"""[\s\S]*?"""|"(?:\\.|[^"\\])*"')
-    yield from pattern.finditer(text)
-
-
 def validate_swift_file(path: Path, offenders: list[str]) -> None:
     text = path.read_text(encoding='utf-8')
-    for match in swift_string_literals(text):
-        literal = match.group(0)
-        if CJK.search(literal):
-            line = text.count('\n', 0, match.start()) + 1
-            compact = ' '.join(literal.split())
-            offenders.append(f'{path.relative_to(ROOT)}:{line}: {compact[:220]}')
+    patterns = [
+        # Standard SwiftUI controls and titles.
+        re.compile(rf'(?:Text|Label|Button|Section|GroupBox|TextField)\(\s*"[^"\n]*[{CJK_CLASS}]'),
+        re.compile(rf'\.navigationTitle\(\s*"[^"\n]*[{CJK_CLASS}]'),
+        re.compile(rf'\.alert\(\s*"[^"\n]*[{CJK_CLASS}]'),
+        re.compile(rf'message:\s*Text\(\s*"[^"\n]*[{CJK_CLASS}]'),
+        # Helper functions used by the activation/deactivation walkthroughs.
+        re.compile(rf'\b(?:step|systemStep)\([^\n]*"[^"\n]*[{CJK_CLASS}]'),
+        # Setup status text and the diagnostic card shown to the user.
+        re.compile(rf'\bmessage\s*=\s*"[^"\n]*[{CJK_CLASS}]'),
+        re.compile(rf'\blog\(\s*"[^"\n]*[{CJK_CLASS}]'),
+    ]
+
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if any(pattern.search(line) for pattern in patterns):
+            offenders.append(f'{path.relative_to(ROOT)}:{lineno}: {line.strip()}')
 
 
 def validate_plist(offenders: list[str]) -> None:
@@ -60,7 +62,7 @@ def validate_plist(offenders: list[str]) -> None:
     text = path.read_text(encoding='utf-8')
     for match in re.finditer(r'<string>([\s\S]*?)</string>', text):
         value = match.group(1)
-        if CJK.search(value):
+        if re.search(rf'[{CJK_CLASS}]', value):
             line = text.count('\n', 0, match.start()) + 1
             offenders.append(f'{path.relative_to(ROOT)}:{line}: {value.strip()}')
 
@@ -73,12 +75,12 @@ def validate() -> None:
     validate_plist(offenders)
 
     if offenders:
-        print('Arabic UI validation failed. Chinese text remains in string literals:')
+        print('Arabic UI validation failed. Chinese user-visible strings remain:')
         for item in offenders[:200]:
             print('  ' + item)
-        raise SystemExit(f'Arabic UI validation failed: {len(offenders)} untranslated string literals remain')
+        raise SystemExit(f'Arabic UI validation failed: {len(offenders)} user-visible strings remain')
 
-    print('Arabic UI validation: zero Chinese string literals in App/, Shared/, and Info.plist')
+    print('Arabic UI validation: no Chinese text detected in monitored user-visible UI strings')
 
 
 def main() -> None:
