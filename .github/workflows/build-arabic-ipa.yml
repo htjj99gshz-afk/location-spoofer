@@ -1,5 +1,7 @@
 name: Build Arabic IPA
 
+# Arabic UI fork build. A push touching this workflow or the translation script
+# also triggers a fresh unsigned IPA build.
 on:
   workflow_dispatch:
   push:
