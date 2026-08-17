@@ -36,7 +36,7 @@ final class SetupCoordinator: ObservableObject {
             message = ""
             return true
         } catch {
-            message = "本地代理初始化失败：\(error.localizedDescription)"
+            message = "فشل تهيئة البروكسي المحلي: \(error.localizedDescription)"
             RuntimeLogger.error("APP", "Startup", "本地服务初始化失败", error: error)
             return false
         }
@@ -48,19 +48,19 @@ final class SetupCoordinator: ObservableObject {
         case .success:
             trustState = .trusted
             needsSetup = false
-            message = "✓ 定位环境正常"
+            message = "✓ بيئة الموقع جاهزة"
         case .certNotTrusted:
             trustState = .unavailable
             setupStep = .cert
             needsSetup = true
-            message = "CA 证书未安装或未信任"
+            message = "شهادة CA غير مثبتة أو غير موثوقة"
         case .verificationInProgress, .verificationSuperseded:
             break
         default:
             trustState = .unavailable
             setupStep = .proxy
             needsSetup = true
-            message = "Wi-Fi 代理未正确设置，请检查 127.0.0.1:8888"
+            message = "بروكسي Wi‑Fi غير مضبوط بشكل صحيح. تحقق من 127.0.0.1:8888"
         }
     }
 
@@ -108,36 +108,36 @@ final class SetupCoordinator: ObservableObject {
         testLog = ""
         let log = { (msg: String) in self.testLog += msg + "\n" }
 
-        log("======== 代理验证测试 ========")
-        log("App 版本: \(appVersion)")
-        log("系统版本: iOS \(UIDevice.current.systemVersion)")
+        log("======== اختبار إعداد الموقع ========")
+        log("إصدار التطبيق: \(appVersion)")
+        log("إصدار النظام: iOS \(UIDevice.current.systemVersion)")
         log("")
 
         // Step A: Proxy running
-        log("[步骤 A] 检查代理是否运行…")
-        log("  端口: 127.0.0.1:8888")
+        log("[الخطوة A] التحقق من تشغيل البروكسي…")
+        log("  العنوان: 127.0.0.1:8888")
         let stepAStart = Date()
         if !proxy.isRunning {
-            log("  ⚠ 代理未运行，尝试启动…")
+            log("  ⚠ البروكسي متوقف، جارٍ محاولة تشغيله…")
             do { try await proxy.start() } catch {
-                log("  ✗ 启动失败: \(error.localizedDescription)")
+                log("  ✗ فشل التشغيل: \(error.localizedDescription)")
                 return .proxyNotRunning
             }
-            log("  ✓ 代理启动成功")
+            log("  ✓ تم تشغيل البروكسي بنجاح")
         } else {
-            log("  ✓ 代理已在运行中")
+            log("  ✓ البروكسي يعمل")
         }
         collectProxyLogs(since: stepAStart, to: log)
 
         // Step B: Combined CA + WiFi proxy check (single request)
         log("")
-        log("[步骤 B] 检测证书与 WiFi 代理…")
-        log("  方式: 请求 baidu.com/paopao-verify-<token>")
-        log("  结果判定: TLS 错误=证书问题 / 响应不匹配=代理未配置 / 匹配=通过")
+        log("[الخطوة B] التحقق من الشهادة وبروكسي Wi‑Fi…")
+        log("  طريقة الفحص: طلب تحقق محلي عبر مسار الشبكة")
+        log("  النتيجة: خطأ TLS يعني مشكلة في الثقة بالشهادة، وعدم تطابق الاستجابة يعني أن البروكسي غير مضبوط")
         let stepBStart = Date()
         let verifyToken = CoreBridge.refreshVerifyToken()
         guard !verifyToken.isEmpty else {
-            log("  ✗ 无法生成验证 token")
+            log("  ✗ تعذر إنشاء رمز التحقق")
             return .certNotTrusted
         }
         do {
@@ -150,17 +150,17 @@ final class SetupCoordinator: ObservableObject {
             let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? 0
             let body = String(data: data, encoding: .utf8) ?? ""
             if body == verifyToken {
-                log("  ✓ 证书已信任，WiFi 代理已配置")
+                log("  ✓ الشهادة موثوقة وبروكسي Wi‑Fi مضبوط")
             } else {
-                log("  ✗ 响应不匹配: HTTP \(statusCode), \(data.count) bytes，WiFi 代理未配置")
+                log("  ✗ الاستجابة غير متطابقة: HTTP \(statusCode)، \(data.count) بايت. تحقق من إعداد بروكسي Wi‑Fi")
                 return .wifiProxyNotConfigured
             }
         } catch {
             let ns = error as NSError
             let msg = error.localizedDescription
-            log("  ✗ 请求失败 [\(ns.domain) code=\(ns.code)]: \(msg)")
+            log("  ✗ فشل الطلب [\(ns.domain) code=\(ns.code)]: \(msg)")
             if isCertificateTrustError(nsError: ns, message: msg) {
-                log("  TLS/证书校验失败，CA 证书未信任")
+                log("  فشل التحقق من TLS/الشهادة. فعّل الثقة الكاملة لشهادة CA")
                 return .certNotTrusted
             }
             return .wifiProxyNotConfigured
@@ -168,7 +168,7 @@ final class SetupCoordinator: ObservableObject {
         collectProxyLogs(since: stepBStart, to: log)
 
         log("")
-        log("======== 环境检测通过 ✓ ========")
+        log("======== فحص البيئة ناجح ✓ ========")
         return .success
     }
 
@@ -202,9 +202,7 @@ final class SetupCoordinator: ObservableObject {
             $0.source == "CORE" && $0.category == "Proxy" && $0.timestamp >= date
         }
         guard !proxyEntries.isEmpty else { return }
-        log("  --- 代理日志 ---")
-        for e in proxyEntries {
-            log("  " + e.message)
-        }
+        log("  --- سجل البروكسي ---")
+        log("  تم تسجيل \(proxyEntries.count) أحداث فنية. استخدم «عرض سجل التشخيص» لعرض التفاصيل عند الحاجة.")
     }
 }
