@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPLACEMENTS = {
     '第 1 步：导入 \\(client.name) 模块': 'الخطوة 1: استيراد وحدة \\(client.name)',
     '打开 \\(client.name)': 'فتح \\(client.name)',
+    '打开 \\(thirdPartyClient.selectedClient.name)': 'فتح \\(thirdPartyClient.selectedClient.name)',
     '第 2 步：تم \\(client.name) 配置': 'الخطوة 2: إكمال إعداد \\(client.name)',
     '请在 \\(client.name) 中تم相应配置。': 'أكمل الإعداد المطلوب داخل \\(client.name).',
     '配置时请使用 gs-loc.apple.com 和 gs-loc-cn.apple.com 两个域名。': 'استخدم النطاقين gs-loc.apple.com و gs-loc-cn.apple.com أثناء الإعداد.',
