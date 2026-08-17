@@ -1,0 +1,55 @@
+name: Build Arabic IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Scripts/apply-arabic-ui.py'
+      - '.github/workflows/build-arabic-ipa.yml'
+
+jobs:
+  build-arabic-ipa:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+
+      - name: Apply Arabic UI and RTL
+        run: python3 Scripts/apply-arabic-ui.py
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build unsigned IPA
+        run: ./build.sh
+
+      - name: Prepare Arabic IPA
+        run: |
+          test -s dist/PaopaoLocationSpoofer-unsigned.ipa
+          mv dist/PaopaoLocationSpoofer-unsigned.ipa dist/Location-Spoofer-Arabic-unsigned.ipa
+          shasum -a 256 dist/Location-Spoofer-Arabic-unsigned.ipa | tee dist/SHA256.txt
+
+      - name: Upload Arabic IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Location-Spoofer-Arabic-IPA
+          path: |
+            dist/Location-Spoofer-Arabic-unsigned.ipa
+            dist/SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
