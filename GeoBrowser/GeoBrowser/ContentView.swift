@@ -8,17 +8,35 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                TextField("URL", text: $address)
+            HStack(spacing: 6) {
+                TextField("URL or search", text: $address)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(.URL)
+                    .submitLabel(.go)
+                    .font(.system(size: 14))
+                    .padding(.horizontal, 10)
+                    .frame(height: 34)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     .onSubmit { navigate() }
-                Button("Go") { navigate() }
+
+                Button(action: navigate) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(width: 34, height: 34)
+                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
-            .padding(8)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 5)
+
             GeoWebView(url: currentURL)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(.container, edges: .bottom)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .dynamicTypeSize(.xSmall ... .large)
     }
 
     private func navigate() {
@@ -31,7 +49,10 @@ struct ContentView: View {
                 value = "https://www.google.com/search?q=\(q)"
             }
         }
-        if let u = URL(string: value) { currentURL = u }
+        if let u = URL(string: value) {
+            currentURL = u
+            address = value
+        }
     }
 }
 
@@ -48,15 +69,22 @@ struct GeoWebView: UIViewRepresentable {
                                               injectionTime: .atDocumentStart,
                                               forMainFrameOnly: false))
         config.userContentController = controller
+
         let webView = WKWebView(frame: .zero, configuration: config)
         context.coordinator.webView = webView
         webView.navigationDelegate = context.coordinator
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.scrollView.alwaysBounceVertical = false
+        webView.pageZoom = 0.92
+        webView.isOpaque = true
         webView.load(URLRequest(url: url))
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        if webView.url != url { webView.load(URLRequest(url: url)) }
+        if webView.url != url {
+            webView.load(URLRequest(url: url))
+        }
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, CLLocationManagerDelegate {
@@ -93,8 +121,15 @@ struct GeoWebView: UIViewRepresentable {
           } catch (_) { try { navigator.geolocation = geo; } catch (_) {} }
           window.__geoResolve = function(id, payload, isError) {
             const cb = callbacks[id]; if (!cb) return;
-            try { if (isError) { if (cb.error) cb.error(payload); } else { if (cb.success) cb.success(payload); } }
-            finally { if (!cb.watch) delete callbacks[id]; }
+            try {
+              if (isError) {
+                if (cb.error) cb.error(payload);
+              } else {
+                if (cb.success) cb.success(payload);
+              }
+            } finally {
+              if (!cb.watch) delete callbacks[id];
+            }
           };
         })();
         """#
@@ -103,38 +138,59 @@ struct GeoWebView: UIViewRepresentable {
             guard let body = message.body as? [String: Any],
                   let type = body["type"] as? String,
                   let id = body["id"] as? String else { return }
+
             switch type {
-            case "get": pendingIDs[id] = false; requestLocation()
-            case "watch": pendingIDs[id] = true; requestLocation()
-            case "clear": pendingIDs.removeValue(forKey: id); if pendingIDs.isEmpty { locationManager.stopUpdatingLocation() }
-            default: break
+            case "get":
+                pendingIDs[id] = false
+                requestLocation()
+            case "watch":
+                pendingIDs[id] = true
+                requestLocation()
+            case "clear":
+                pendingIDs.removeValue(forKey: id)
+                if pendingIDs.isEmpty { locationManager.stopUpdatingLocation() }
+            default:
+                break
             }
         }
 
         private func requestLocation() {
             switch locationManager.authorizationStatus {
-            case .notDetermined: locationManager.requestWhenInUseAuthorization()
-            case .authorizedAlways, .authorizedWhenInUse: locationManager.startUpdatingLocation()
-            case .denied, .restricted: resolveErrorAll(code: 1, message: "Location permission denied.")
-            @unknown default: resolveErrorAll(code: 2, message: "Location unavailable.")
+            case .notDetermined:
+                locationManager.requestWhenInUseAuthorization()
+            case .authorizedAlways, .authorizedWhenInUse:
+                locationManager.startUpdatingLocation()
+            case .denied, .restricted:
+                resolveErrorAll(code: 1, message: "Location permission denied.")
+            @unknown default:
+                resolveErrorAll(code: 2, message: "Location unavailable.")
             }
         }
 
         func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
             switch manager.authorizationStatus {
-            case .authorizedAlways, .authorizedWhenInUse: manager.startUpdatingLocation()
-            case .denied, .restricted: resolveErrorAll(code: 1, message: "Location permission denied.")
-            default: break
+            case .authorizedAlways, .authorizedWhenInUse:
+                manager.startUpdatingLocation()
+            case .denied, .restricted:
+                resolveErrorAll(code: 1, message: "Location permission denied.")
+            default:
+                break
             }
         }
 
         func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
             guard let loc = manager.location ?? locations.last else { return }
+
             for id in Array(pendingIDs.keys) {
                 resolveSuccess(id: id, location: loc)
-                if pendingIDs[id] == false { pendingIDs.removeValue(forKey: id) }
+                if pendingIDs[id] == false {
+                    pendingIDs.removeValue(forKey: id)
+                }
             }
-            if pendingIDs.isEmpty { manager.stopUpdatingLocation() }
+
+            if pendingIDs.isEmpty {
+                manager.stopUpdatingLocation()
+            }
         }
 
         func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -169,9 +225,15 @@ struct GeoWebView: UIViewRepresentable {
         private func resolve(id: String, payload: [String: Any], isError: Bool) {
             guard let data = try? JSONSerialization.data(withJSONObject: payload),
                   let json = String(data: data, encoding: .utf8) else { return }
-            let escapedID = id.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
+
+            let escapedID = id
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+
             let js = "window.__geoResolve && window.__geoResolve('\(escapedID)', \(json), \(isError ? "true" : "false"));"
-            DispatchQueue.main.async { [weak self] in self?.webView?.evaluateJavaScript(js) }
+            DispatchQueue.main.async { [weak self] in
+                self?.webView?.evaluateJavaScript(js)
+            }
         }
     }
 }
