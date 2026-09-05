@@ -129,7 +129,7 @@ struct GeoWebView: UIViewRepresentable {
         }
 
         func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-            guard let loc = locations.last else { return }
+            guard let loc = manager.location ?? locations.last else { return }
             for id in Array(pendingIDs.keys) {
                 resolveSuccess(id: id, location: loc)
                 if pendingIDs[id] == false { pendingIDs.removeValue(forKey: id) }
