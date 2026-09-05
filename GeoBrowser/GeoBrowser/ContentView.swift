@@ -142,6 +142,8 @@ struct GeoWebView: UIViewRepresentable {
         }
 
         private func resolveSuccess(id: String, location: CLLocation) {
+            let heading: Any = location.course >= 0 ? NSNumber(value: location.course) : NSNull()
+            let speed: Any = location.speed >= 0 ? NSNumber(value: location.speed) : NSNull()
             let payload: [String: Any] = [
                 "coords": [
                     "latitude": location.coordinate.latitude,
@@ -149,8 +151,8 @@ struct GeoWebView: UIViewRepresentable {
                     "accuracy": location.horizontalAccuracy,
                     "altitude": location.altitude,
                     "altitudeAccuracy": location.verticalAccuracy,
-                    "heading": location.course >= 0 ? location.course : NSNull(),
-                    "speed": location.speed >= 0 ? location.speed : NSNull()
+                    "heading": heading,
+                    "speed": speed
                 ],
                 "timestamp": Int(location.timestamp.timeIntervalSince1970 * 1000)
             ]
