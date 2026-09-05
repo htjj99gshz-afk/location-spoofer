@@ -1,0 +1,51 @@
+name: Build GeoBrowser IPA
+
+on:
+  push:
+    branches:
+      - geobrowser-ipa-build
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        working-directory: GeoBrowserBuild
+        run: xcodegen generate
+
+      - name: Build unsigned app
+        working-directory: GeoBrowserBuild
+        run: |
+          xcodebuild \
+            -project GeoBrowser.xcodeproj \
+            -scheme GeoBrowser \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            build
+
+      - name: Package IPA
+        working-directory: GeoBrowserBuild
+        run: |
+          rm -rf Payload GeoBrowser-unsigned.ipa
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/GeoBrowser.app Payload/
+          zip -qry GeoBrowser-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeoBrowser-unsigned-IPA
+          path: GeoBrowserBuild/GeoBrowser-unsigned.ipa
+          if-no-files-found: error
