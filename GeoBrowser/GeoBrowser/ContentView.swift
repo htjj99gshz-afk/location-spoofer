@@ -8,35 +8,35 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 TextField("URL or search", text: $address)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
                     .submitLabel(.go)
-                    .font(.system(size: 14))
-                    .padding(.horizontal, 10)
-                    .frame(height: 34)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .font(.system(size: 12.5))
+                    .padding(.horizontal, 8)
+                    .frame(height: 30)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .onSubmit { navigate() }
 
                 Button(action: navigate) {
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 34, height: 34)
-                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
 
             GeoWebView(url: currentURL)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .dynamicTypeSize(.xSmall ... .large)
+        .dynamicTypeSize(.xSmall ... .medium)
     }
 
     private func navigate() {
@@ -75,7 +75,7 @@ struct GeoWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.alwaysBounceVertical = false
-        webView.pageZoom = 0.92
+        webView.pageZoom = 0.86
         webView.isOpaque = true
         webView.load(URLRequest(url: url))
         return webView
